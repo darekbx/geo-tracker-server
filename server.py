@@ -1,16 +1,44 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import os
+'''
+Geo Tracker server
 
-DEFAULT_PORT = 8080
+
+deploy: git push heroku master
+url: https://geo-tracker-live.herokuapp.com/
+
+
+'''
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from base64 import b64encode, b64decode
+import os
+import json
+import zlib
+
+DEFAULT_PORT = '8080'
 
 class GeoTrackerServer(BaseHTTPRequestHandler):
        def do_GET(self):
               self.send_response(200)
-              self.send_header('Content-type', 'text/html')
+              self.send_header('Content-type', 'application/json')
               self.end_headers()
-              self.wfile.write("GET request for {}".format(self.path).encode('utf-8'))
+              
+              response = json.dumps([
+                     {"lat":21.0, "lng":52.0, "speed": 10, "timestamp": 1569342211},
+                     {"lat":21.0, "lng":52.0, "speed": 10, "timestamp": 1569342211},
+                     {"lat":21.0, "lng":52.0, "speed": 10, "timestamp": 1569342211},
+                     {"lat":21.0, "lng":52.0, "speed": 10, "timestamp": 1569342211},
+                     {"lat":21.0, "lng":52.0, "speed": 10, "timestamp": 1569342211},
+                     {"lat":21.0, "lng":52.0, "speed": 10, "timestamp": 1569342211}
+              ])
+              
+              #compressed = b64encode(
+              #       zlib.compress(
+              #              response.encode("utf-8")
+              #       )
+              #).decode("ascii")
+              
+              self.wfile.write(response.encode())
 
-def run(server_class=HTTPServer, handler_class=GeoTrackerServer, port = DEFAULT_PORT):
+def run(server_class=HTTPServer, handler_class=GeoTrackerServer, port=DEFAULT_PORT):
        server_address = ('', int(port))
        httpd = server_class(server_address, handler_class)
        try:
