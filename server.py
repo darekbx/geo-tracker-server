@@ -11,7 +11,7 @@ class GeoTrackerServer(BaseHTTPRequestHandler):
               self.wfile.write("GET request for {}".format(self.path).encode('utf-8'))
 
 def run(server_class=HTTPServer, handler_class=GeoTrackerServer, port = DEFAULT_PORT):
-       server_address = ('', port)
+       server_address = ('', str(port))
        httpd = server_class(server_address, handler_class)
        try:
               httpd.serve_forever()
