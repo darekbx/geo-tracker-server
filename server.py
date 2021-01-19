@@ -5,126 +5,151 @@ Geo Tracker server
 
  Location data model:
  { 
-        "lat": 21.000000           # floating point with 6 decimal places
-        "lng": 52.000000           # floating point with 6 decimal places
-        "speed": 23.5              # km\h
-        "timestamp": 1569342211    # timestamp of the sample
-        "track_id": 12             # identifier of the track
+    "lat": 21.000000           # floating point with 6 decimal places
+    "lng": 52.000000           # floating point with 6 decimal places
+    "speed": 23.5              # speed in km\h
+    "timestamp": 1569342211    # timestamp of the sample
+    "track_id": 12             # identifier of the track
  }
-
-TODO:
- - authentication (provide a token?)
- - postgres db: https://devcenter.heroku.com/articles/getting-started-with-python#provision-a-database
-
 '''
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from base64 import b64encode, b64decode
-from urllib.parse import urlparse, parse_qs
 import os
 import json
-import zlib
-
 import psycopg2
 from psycopg2 import Error
-
-
-DEFAULT_PORT = '8080'
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse, parse_qs
 
 class GeoTrackerDB:
 
-       def connection_test(self):
-              try:
-                     connection = psycopg2.connect(db_path, os.environ['PORTDATABASE_URL'])
-                     cursor = connection.cursor()
-                     
-                     print("PostgreSQL server information")
-                     print(connection.get_dsn_parameters(), "\n")
-                     cursor.execute("SELECT version();")
-                     record = cursor.fetchone()
-                     print("You are connected to - ", record, "\n")
+    connection = None
+    cursor = None
 
-              except (Exception, Error) as error:
-                     print("Error while connecting to PostgreSQL", error)
-              finally:
-                     if (connection):
-                            cursor.close()
-                            connection.close()
-                            print("PostgreSQL connection is closed")
+    def connect(self):
+        if 'DATABASE_URL' in os.environ:
+            db_url = os.environ['DATABASE_URL']
+        else:
+            db_url = "" # Take from heroku variables 
+        self.connection = psycopg2.connect(db_url)
+        self.cursor = self.connection.cursor()
+        self.init_scheme()
+        
+    def init_scheme(self):
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS positions (
+                id integer generated always as identity,
+                lat real NOT NULL,
+                lng real NOT NULL,
+                speed real NOT NULL,
+                timestamp bigint NOT NULL,
+                track_id integer NOT NULL,
+                PRIMARY KEY (id)
+            )                    
+        ''')
+        self.connection.commit()
+
+    def fetch_all(self, limit):
+        self.cursor.execute("SELECT * FROM positions LIMIT {0}".format(limit))
+        return self.cursor.fetchall()
+
+    def add(self, data):
+        self.cursor.execute("INSERT INTO positions (lat, lng, speed, timestamp, track_id) VALUES(%s, %s, %s, %s, %s)", data)
+        self.connection.commit()
+
+    def close(self):
+        if (self.connection):
+            self.cursor.close()
+            self.connection.close()
 
 class GeoTrackerServer(BaseHTTPRequestHandler):
 
-       db = GeoTrackerDB()
+    LOCATION_DATA_PATH = "/location-data"
+    SAVE_LOCATION_PATH = "/save-location"
 
-       LOCATION_DATA_PATH = "/location-data"
-       SAVE_LOCATION_PATH = "/save-location"
+    db = GeoTrackerDB()
 
-       def do_GET(self):
-              url = urlparse(self.path)
+    def do_GET(self):
+        url = urlparse(self.path)
+        
+        if url.path != self.LOCATION_DATA_PATH:
+            self._end_with_404()
+            return
 
-              if url.path != self.LOCATION_DATA_PATH:
-                     self._end_with_404()
-                     self.wfile.write("HTTP 404".encode())
-                     return
+        if self._is_authorized():
+            self._end_with_401()
+            return
 
-              if self.headers['Authorization'] != "Basic {0}".format(os.environ["BASIC_TOKEN"]):
-                     self._end_with_401()
-                     self.wfile.write("HTTP 401".encode())
-                     return
+        query = parse_qs(url.query)
+        limit = query['limit'][0]
 
-              db.connection_test()
-              
-              query = parse_qs(url.query)
-              limit = query['limit'][0]
+        self.db.connect()
+        rows = self.db.fetch_all(limit)
+        self.db.close()
 
-              response = json.dumps([
-                     {"lat":21.0, "lng":52.0, "speed": 10, "timestamp": 1569342211, "track_id": 12},
-                     {"lat":21.0, "lng":52.0, "speed": 10, "timestamp": 1569342211, "track_id": 12},
-                     {"lat":21.0, "lng":52.0, "speed": 10, "timestamp": 1569342211, "track_id": 12},
-                     {"lat":21.0, "lng":52.0, "speed": 10, "timestamp": 1569342211, "track_id": 12},
-                     {"lat":21.0, "lng":52.0, "speed": 10, "timestamp": 1569342211, "track_id": 12},
-                     {"lat":21.0, "lng":52.0, "speed": 10, "timestamp": 1569342211, "track_id": 12}
-              ])
-              
-              #compressed = b64encode(
-              #       zlib.compress(
-              #              response.encode("utf-8")
-              #       )
-              #).decode("ascii")
-              
-              self.send_response(200)
-              self.send_header('Content-type', 'application/json')
-              self.end_headers()
-              self.wfile.write(response.encode())
+        named_rows = []
+        for row in rows:
+            named_rows.append({ "lat": row[1], "lng": row[2], "speed": row[3], "timestamp": row[4], "track_id": row[5] })
+        response = json.dumps(named_rows)
 
-       def do_POST(self):
-              url = urlparse(self.path)
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        self.wfile.write(response.encode())
 
-              if url.path != self.SAVE_LOCATION_PATH:
-                     self._end_with_404()
-                     return
+    def do_POST(self):
+        url = urlparse(self.path)
 
-              if self.headers['Authorization'] != "Basic {0}".format(os.environ["BASIC_TOKEN"]):
-                     self._end_with_401()
-                     self.wfile.write("HTTP 401".encode())
-                     return
-              pass
+        if url.path != self.SAVE_LOCATION_PATH:
+            self._end_with_404()
+            return
 
-       def _end_with_404(self):
-              self.send_response(404)
-              self.end_headers()
+        if self._is_authorized():
+            self._end_with_401()
+            return
+        
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length)
+        query = parse_qs(post_data.decode())
 
-       def _end_with_401(self):
-              self.send_response(401)
-              self.end_headers()
+        data = (
+            query["lat"][0], 
+            query["lng"][0], 
+            query["speed"][0], 
+            query["timestamp"][0], 
+            query["track_id"][0], 
+        )
 
-def run(server_class=HTTPServer, handler_class=GeoTrackerServer, port=DEFAULT_PORT):
-       server_address = ('', int(port))
-       httpd = server_class(server_address, handler_class)
-       try:
-              httpd.serve_forever()
-       except KeyboardInterrupt:
-              pass
-       httpd.server_close()
+        self.db.connect()
+        self.db.add(data)
+        self.db.close()
+
+        self.send_response(201)
+        self.end_headers()
+
+    def _is_authorized(self):
+        basic_token = ""
+        if 'BASIC_TOKEN' not in os.environ:
+            basic_token = "token"
+        else:
+            basic_token = os.environ["BASIC_TOKEN"]
+        return self.headers['Authorization'] != "Basic {0}".format(basic_token)
+
+    def _end_with_404(self):
+        self.send_response(404)
+        self.end_headers()
+
+    def _end_with_401(self):
+        self.send_response(401)
+        self.end_headers()
+
+def run(server_class=HTTPServer, handler_class=GeoTrackerServer, port = ""):
+    server_address = ('', int(port))
+    httpd = server_class(server_address, handler_class)
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    httpd.server_close()
  
 if __name__ == '__main__':
-       run(port = os.environ['PORT'] if 'PORT' in os.environ else DEFAULT_PORT)
+    DEFAULT_PORT = '8080'
+    run(port = os.environ['PORT'] if 'PORT' in os.environ else DEFAULT_PORT)
