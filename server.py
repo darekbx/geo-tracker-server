@@ -70,7 +70,7 @@ class GeoTrackerServer(BaseHTTPRequestHandler):
                      self.wfile.write("HTTP 401".encode())
                      return
 
-              db.connection_test()
+              self.db.connection_test()
               
               query = parse_qs(url.query)
               limit = query['limit'][0]
