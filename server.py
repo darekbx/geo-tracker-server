@@ -25,16 +25,13 @@ class GeoTrackerDB:
     cursor = None
 
     def connect(self):
-        try:
-            if 'DATABASE_URL' in os.environ:
-                db_url = psycopg2.connect(os.environ['DATABASE_URL'])
-            else:
-                db_url = "" # Take from heroku variables 
-            self.connection = psycopg2.connect(db_url)
-            self.cursor = self.connection.cursor()
-            self.init_scheme()
-        except (Exception, Error) as error:
-                print("Error while connecting to PostgreSQL", error)
+        if 'DATABASE_URL' in os.environ:
+            db_url = psycopg2.connect(os.environ['DATABASE_URL'])
+        else:
+            db_url = "" # Take from heroku variables 
+        self.connection = psycopg2.connect(db_url)
+        self.cursor = self.connection.cursor()
+        self.init_scheme()
         
     def init_scheme(self):
         self.cursor.execute('''
