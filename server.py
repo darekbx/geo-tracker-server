@@ -26,7 +26,7 @@ class GeoTrackerDB:
 
     def connect(self):
         if 'DATABASE_URL' in os.environ:
-            db_url = psycopg2.connect(os.environ['DATABASE_URL'])
+            db_url = os.environ['DATABASE_URL']
         else:
             db_url = "" # Take from heroku variables 
         self.connection = psycopg2.connect(db_url)
