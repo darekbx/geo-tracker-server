@@ -34,7 +34,7 @@ class GeoTrackerDB:
 
        def connection_test(self):
               try:
-                     connection = psycopg2.connect(db_path, os.environ['PORTDATABASE_URL'])
+                     connection = psycopg2.connect(os.environ['PORTDATABASE_URL'])
                      cursor = connection.cursor()
                      
                      print("PostgreSQL server information")
