@@ -60,7 +60,6 @@ class GeoTrackerServer(BaseHTTPRequestHandler):
 
        def do_GET(self):
               url = urlparse(self.path)
-
               if url.path != self.LOCATION_DATA_PATH:
                      self._end_with_404()
                      self.wfile.write("HTTP 404".encode())
@@ -93,6 +92,7 @@ class GeoTrackerServer(BaseHTTPRequestHandler):
               
               self.send_response(200)
               self.send_header('Content-type', 'application/json')
+
               self.end_headers()
               self.wfile.write(response.encode())
 
@@ -106,6 +106,12 @@ class GeoTrackerServer(BaseHTTPRequestHandler):
               if self.headers['Authorization'] != "Basic {0}".format(os.environ["BASIC_TOKEN"]):
                      self._end_with_401()
                      self.wfile.write("HTTP 401".encode())
+                     return
+              pass
+
+       def do_POST(self):
+              if self.path != self.SAVE_LOCATION_PATH:
+                     self._end_with_404()
                      return
               pass
 
