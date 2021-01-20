@@ -152,7 +152,7 @@ def run(server_class=HTTPServer, handler_class=GeoTrackerServer, port = ""):
     except KeyboardInterrupt:
         pass
     httpd.server_close()
- 
+
 if __name__ == '__main__':
     DEFAULT_PORT = '8080'
     run(port = os.environ['PORT'] if 'PORT' in os.environ else DEFAULT_PORT)
