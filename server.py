@@ -34,7 +34,7 @@ class GeoTrackerDB:
 
        def connection_test(self):
               try:
-                     connection = psycopg2.connect(db_path, os.environ['PORTDATABASE_URL'])
+                     connection = psycopg2.connect(os.environ['DATABASE_URL'])
                      cursor = connection.cursor()
                      
                      print("PostgreSQL server information")
@@ -70,7 +70,7 @@ class GeoTrackerServer(BaseHTTPRequestHandler):
                      self.wfile.write("HTTP 401".encode())
                      return
 
-              db.connection_test()
+              self.db.connection_test()
               
               query = parse_qs(url.query)
               limit = query['limit'][0]
