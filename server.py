@@ -24,9 +24,36 @@ import os
 import json
 import zlib
 
+import psycopg2
+from psycopg2 import Error
+
+
 DEFAULT_PORT = '8080'
 
+class GeoTrackerDB:
+
+       def connection_test(self):
+              try:
+                     connection = psycopg2.connect(db_path, os.environ['PORTDATABASE_URL'])
+                     cursor = connection.cursor()
+                     
+                     print("PostgreSQL server information")
+                     print(connection.get_dsn_parameters(), "\n")
+                     cursor.execute("SELECT version();")
+                     record = cursor.fetchone()
+                     print("You are connected to - ", record, "\n")
+
+              except (Exception, Error) as error:
+                     print("Error while connecting to PostgreSQL", error)
+              finally:
+                     if (connection):
+                            cursor.close()
+                            connection.close()
+                            print("PostgreSQL connection is closed")
+
 class GeoTrackerServer(BaseHTTPRequestHandler):
+
+       db = GeoTrackerDB()
 
        LOCATION_DATA_PATH = "/location-data"
        SAVE_LOCATION_PATH = "/save-location"
@@ -43,6 +70,8 @@ class GeoTrackerServer(BaseHTTPRequestHandler):
                      self._end_with_401()
                      self.wfile.write("HTTP 401".encode())
                      return
+
+              db.connection_test()
               
               query = parse_qs(url.query)
               limit = query['limit'][0]
