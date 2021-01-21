@@ -1,2 +1,2 @@
 web: python server.py
-web: vendor/bin/heroku-php-apache2 web/
+web: $(composer config bin-dir)/heroku-php-apache2 web/
