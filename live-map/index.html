@@ -1,0 +1,49 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>OpenLayers Demo</title>
+    <style type="text/css">
+      html, body, #basicMap {
+          width: 100%;
+          height: 100%;
+          margin: 0;
+      }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="OpenLayers.js"></script>
+    <script>
+      function init() {
+        map = new OpenLayers.Map("basicMap");
+
+        var mapnik         = new OpenLayers.Layer.OSM();
+        var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
+        var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
+        var position       = new OpenLayers.LonLat(21.00,52.00).transform( fromProjection, toProjection);
+        var zoom           = 15; 
+
+        var markers = new OpenLayers.Layer.Markers("Markers");
+        map.addLayer(markers);
+
+        var marker = new OpenLayers.Marker(position);
+        markers.addMarker(marker);
+
+        map.addLayer(mapnik);
+        map.setCenter(position, zoom);
+
+        setTimeout(() => {
+            $.get("server.php", function(data) {
+                var newLonLat = new OpenLayers.LonLat(21.01, 52.01).transform(fromProjection, toProjection);
+                map.panTo(newLonLat);
+                marker.lonlat = newLonLat;
+                markers.redraw();
+                
+            });
+        }, 5000);
+
+      }
+    </script>
+  </head>
+  <body onload="init();">
+    <div id="basicMap"></div>
+  </body>
+</html>
