@@ -10,7 +10,7 @@ if ($show_errors) {
 }
 
 $ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'https://geo-tracker-live.herokuapp.com/location-data?limit=100');
+curl_setopt($ch, CURLOPT_URL, $DATA_URL);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, array(
     "Authorization: Basic $BASIC_TOKEN"
