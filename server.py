@@ -48,8 +48,14 @@ class GeoTrackerDB:
         self.connection.commit()
 
     def fetch_all(self, limit):
-        self.cursor.execute("SELECT * FROM positions LIMIT {0}".format(limit))
-        return self.cursor.fetchall()
+        self.cursor.execute("SELECT * FROM positions ORDER BY timestamp DESC LIMIT {0}".format(limit))
+        data = self.cursor.fetchall()
+        #self.delete_all()
+        return data
+
+    def delete_all(self):
+        self.cursor.execute("DELETE FROM positions")
+        self.connection.commit()
 
     def add(self, data):
         self.cursor.execute("INSERT INTO positions (lat, lng, speed, timestamp, track_id) VALUES(%s, %s, %s, %s, %s)", data)

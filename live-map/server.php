@@ -13,11 +13,11 @@ $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $DATA_URL);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-    "Authorization: Basic $BASIC_TOKEN"
+    "Authorization: Basic $BASIC_TOKEN",
+    "Content-Type: application/json"
 ));
 $response = curl_exec($ch);
-$result = json_decode($response);
-print_r($result);
+print_r($response);
 curl_close($ch); 
 
 ?>
