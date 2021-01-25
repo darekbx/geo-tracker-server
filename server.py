@@ -50,7 +50,7 @@ class GeoTrackerDB:
     def fetch_all(self, limit):
         self.cursor.execute("SELECT * FROM positions ORDER BY timestamp DESC LIMIT {0}".format(limit))
         data = self.cursor.fetchall()
-        #self.delete_all()
+        self.delete_all()
         return data
 
     def delete_all(self):

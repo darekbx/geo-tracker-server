@@ -32,12 +32,14 @@
 
         setTimeout(() => {
             $.get("server.php", function(data) {
+              if (data) {
                 var jsonData = JSON.parse(data);
                 var lastLocation = jsonData[0];
-                var newLonLat = new OpenLayers.LonLat(lastLocation["lat"], lastLocation["lng"]).transform(fromProjection, toProjection);
+                var newLonLat = new OpenLayers.LonLat(lastLocation["lng"], lastLocation["lat"]).transform(fromProjection, toProjection);
                 map.panTo(newLonLat);
                 marker.lonlat = newLonLat;
                 markers.redraw();  
+              }
             });
         }, 10000);
 
