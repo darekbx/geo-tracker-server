@@ -30,9 +30,9 @@
         map.addLayer(mapnik);
         map.setCenter(position, zoom);
 
-        setTimeout(() => {
+        setInterval(() => {
             $.get("server.php", function(data) {
-              if (data) {
+              if (data && data.length > 0) {
                 var jsonData = JSON.parse(data);
                 var lastLocation = jsonData[0];
                 var newLonLat = new OpenLayers.LonLat(lastLocation["lng"], lastLocation["lat"]).transform(fromProjection, toProjection);
